@@ -447,7 +447,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             if (clientIdle != null && clientIdle > realmIdle) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT,
-                        "null",
+                        "Client session idle timeout cannot exceed realm SSO session idle timeout.",
                         Messages.CLIENT_IDLE
                 );
             }
@@ -456,7 +456,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             if (clientMax != null && clientMax > realmMax) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN,
-                        "null",
+                        "Client session max lifespan cannot exceed realm SSO session max lifespan.",
                         Messages.CLIENT_MAXLIFE_SPAN
                 );
             }
@@ -468,7 +468,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             if (clientIdle != null && clientIdle > allowedMaxIdleTimeIfRememberMeEnabled) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT,
-                        "null",
+                        "Client session idle timeout cannot exceed realm SSO session idle timeout or RememberMe idle timeout.",
                         Messages.CLIENT_IDLE_REMEMBERME
 
                 );
@@ -478,7 +478,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             if (clientMax != null && clientMax > allowedMaxSpanIfRememberMeEnabled) {
                 context.addError(
                         OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN,
-                        "null",
+                        "Client session max lifespan cannot exceed realm SSO session max lifespan or RememberMe Max span.",
                         Messages.CLIENT_MAXLIFESPAN_REMEMBERME
                 );
             }

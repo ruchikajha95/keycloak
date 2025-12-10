@@ -54,6 +54,7 @@ import org.keycloak.representations.adapters.action.TestAvailabilityAction;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.OAuth2ErrorRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.UserSessionRepresentation;
@@ -1050,5 +1051,56 @@ public class ClientTest {
                     .password("password");
             return realm;
         }
+    }
+
+    @Test
+    public void testClientSessionTimeoutValidation() {
+        ClientRepresentation clientRepresentation = createClient();
+        clientRepresentation.setAttributes(new HashMap<>());
+        ClientResource clientResource = managedRealm.admin().clients().get(clientRepresentation.getId());
+        ClientRepresentation rep = clientResource.toRepresentation();
+        if (rep.getAttributes() == null) {
+            rep.setAttributes(new HashMap<>());
+        }
+
+        // Remember-Me Disabled
+        RealmRepresentation realm = managedRealm.admin().toRepresentation();
+        realm.setRememberMe(false);
+        realm.setSsoSessionIdleTimeout(300);
+        realm.setSsoSessionMaxLifespan(600);
+        managedRealm.admin().update(realm);
+
+        rep = clientResource.toRepresentation();
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT, "400");
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN, "500");
+
+        createOrUpdateClientExpectingValidationErrors(rep, false,
+                "Client session idle timeout cannot exceed realm SSO session idle timeout.");
+
+        // Fix idle, break max lifespan
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT, "200");
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN, "700");
+
+        createOrUpdateClientExpectingValidationErrors(rep, false,
+                "Client session max lifespan cannot exceed realm SSO session max lifespan.");
+
+        // Remember-Me Enabled
+        realm = managedRealm.admin().toRepresentation();
+        realm.setRememberMe(true);
+        realm.setSsoSessionIdleTimeoutRememberMe(500);
+        realm.setSsoSessionMaxLifespanRememberMe(900);
+        managedRealm.admin().update(realm);
+
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT, "550");
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN, "800");
+
+        createOrUpdateClientExpectingValidationErrors(rep, false,
+                "Client session idle timeout cannot exceed realm SSO session idle timeout or RememberMe idle timeout.");
+
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_IDLE_TIMEOUT, "300");
+        rep.getAttributes().put(OIDCConfigAttributes.CLIENT_SESSION_MAX_LIFESPAN, "950");
+
+        createOrUpdateClientExpectingValidationErrors(rep, false,
+                "Client session max lifespan cannot exceed realm SSO session max lifespan or RememberMe Max span.");
     }
 }
