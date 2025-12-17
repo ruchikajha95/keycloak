@@ -858,6 +858,51 @@ public class DefaultExportImportManager implements ExportImportManager {
         if (rep.getOfflineSessionMaxLifespanEnabled() != null) realm.setOfflineSessionMaxLifespanEnabled(rep.getOfflineSessionMaxLifespanEnabled());
         if (rep.getOfflineSessionMaxLifespan() != null)
             realm.setOfflineSessionMaxLifespan(rep.getOfflineSessionMaxLifespan());
+        // ===== REALM CLIENT SESSION VALIDATION =====
+         // Values coming from UI (new values)
+        Integer clientIdle = rep.getClientSessionIdleTimeout();
+        Integer clientMax  = rep.getClientSessionMaxLifespan();
+
+        // Resolve realm SSO values (new OR existing)
+        int realmIdle = rep.getSsoSessionIdleTimeout() != null
+                ? rep.getSsoSessionIdleTimeout()
+                : realm.getSsoSessionIdleTimeout();
+
+        int realmMax = rep.getSsoSessionMaxLifespan() != null
+                ? rep.getSsoSessionMaxLifespan()
+                : realm.getSsoSessionMaxLifespan();
+
+        int realmRememberIdle = rep.getSsoSessionIdleTimeoutRememberMe() != null
+                ? rep.getSsoSessionIdleTimeoutRememberMe()
+                : realm.getSsoSessionIdleTimeoutRememberMe();
+
+        int realmRememberMax = rep.getSsoSessionMaxLifespanRememberMe() != null
+                ? rep.getSsoSessionMaxLifespanRememberMe()
+                : realm.getSsoSessionMaxLifespanRememberMe();
+
+        boolean rememberMeEnabled = rep.isRememberMe() != null
+                ? rep.isRememberMe()
+                : realm.isRememberMe();
+        if(!rememberMeEnabled) {
+           if(clientIdle != null && clientIdle > realmIdle) {
+               throw new ModelException("Client Session Idle Timeout cannot be greater than Realm SSO Idle Timeout.");
+           }
+            if (clientMax != null && clientMax > realmMax) {
+                throw new ModelException("Client session max lifespan cannot exceed realm SSO session max lifespan.");
+            }
+        }
+        else {
+            int allowedIdle = Math.max(realmIdle, realmRememberIdle);
+            int allowedMax  = Math.max(realmMax, realmRememberMax);
+            if (clientIdle != null && clientIdle > allowedIdle) {
+                throw new ModelException("Client session idle timeout cannot exceed realm SSO or Remember Me idle timeout."
+                );
+            }
+            if (clientMax != null && clientMax > allowedMax) {
+                throw new ModelException("Client session max lifespan cannot exceed realm SSO or Remember Me max lifespan."
+                );
+            }
+        }
         if (rep.getClientSessionIdleTimeout() != null)
             realm.setClientSessionIdleTimeout(rep.getClientSessionIdleTimeout());
         if (rep.getClientSessionMaxLifespan() != null)
